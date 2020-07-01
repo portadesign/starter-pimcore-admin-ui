@@ -3560,3 +3560,55 @@ pimcore.helpers.sendRequest = function (
     request.open(method, url);
     request.send();
 };
+
+pimcore.helpers.getMatchingElementRestrictions = function(perspectiveConfig, path) {
+    var matchingExtensions = [];
+    if (perspectiveConfig.hasOwnProperty('extension') && perspectiveConfig.extension.hasOwnProperty('elementRestrictions')) {
+        for (var key in perspectiveConfig.extension.elementRestrictions) {
+            if (!perspectiveConfig.extension.elementRestrictions.hasOwnProperty(key)) continue;
+            if (!perspectiveConfig.extension.elementRestrictions[key].hasOwnProperty('path')) continue;
+            if (!path.match(perspectiveConfig.extension.elementRestrictions[key].path.replace(/\//g,'\\/'))) continue;
+            matchingExtensions.push(perspectiveConfig.extension.elementRestrictions[key]);
+        }
+    }
+
+    return matchingExtensions;
+};
+
+pimcore.helpers.isObjectContextMenuOptionRestricted = function(perspectiveConfig, path, option) {
+    var matchingExtensions = pimcore.helpers.getMatchingElementRestrictions(perspectiveConfig, path);
+
+    for (var extKey in matchingExtensions) {
+        if (!matchingExtensions.hasOwnProperty(extKey)) {
+            continue;
+        }
+        if (matchingExtensions[extKey].hasOwnProperty(option)) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
+pimcore.helpers.isObjectContextMenuClassRestricted = function(perspectiveConfig, record, classId) {
+    var cvForbidden = [];
+    var cvAllowed = [];
+    var className = (record.data.hasOwnProperty('className')) ? record.data.className : 'folder';
+    var matchingExtensions = pimcore.helpers.getMatchingElementRestrictions(perspectiveConfig, record.data.path);
+
+    for (var extKey in matchingExtensions) {
+        if (!matchingExtensions.hasOwnProperty(extKey)) continue;
+        if (matchingExtensions[extKey].hasOwnProperty('forbiddenClasses')) {
+            //merges with duplicates, should not matter
+            cvForbidden = cvForbidden.concat(matchingExtensions[extKey].forbiddenClasses.split(","));
+        }
+        if (matchingExtensions[extKey].hasOwnProperty('conditionallyAllowedClasses')) {
+            var conditionallyAllowedClasses = JSON.parse(matchingExtensions[extKey].conditionallyAllowedClasses);
+            if (in_array(classId, conditionallyAllowedClasses[className])) {
+                cvAllowed.push(classId);
+            }
+        }
+    }
+
+    return (in_array(classId, cvForbidden) && !in_array(classId, cvAllowed));
+};
