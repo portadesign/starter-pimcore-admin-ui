@@ -441,6 +441,11 @@
          if (node.getOwnerTree() != targetNode.getOwnerTree()) {
              return false;
          }
+
+        if (this.nodeRestrictedByCustomviewExtension(node, targetNode)) {
+            return false;
+        }
+
          // check for permission
          try {
              if (node.data.permissions.settings) {
@@ -515,6 +520,11 @@
              Ext.MessageBox.alert(' ', t('element_cannot_be_moved'));
              return false;
          }
+
+        if (this.nodeRestrictedByCustomviewExtension(node, newParent)) {
+            Ext.MessageBox.alert(t('missing_permission'), t('element_cannot_be_moved'));
+            return false;
+        }
  
          // check for permission
          if (node.data.permissions.settings) {
@@ -621,7 +631,7 @@
                          }
                      }
  
-                     if (perspectiveCfg.inTreeContextMenu("asset.addFolder")) {
+                     if (perspectiveCfg.inTreeContextMenu("asset.addFolder") && pimcore.helpers.isObjectContextMenuOptionRestricted(this.perspectiveCfg, record.data.path, 'restrictFolder') === false) {
                          menu.add(new Ext.menu.Item({
                              text: t('create_folder'),
                              iconCls: "pimcore_icon_folder pimcore_icon_overlay_add",
@@ -926,6 +936,17 @@
      },
  
      pasteInfo: function (tree, record, type) {
+        // check extension restrictions
+        var node = tree.getStore().getById(pimcore.cachedAssetId);
+        if (!node) {
+            Ext.MessageBox.alert(t('error'), t('cross_tree_moves_not_supported'));
+            return false;
+        }
+        if (this.nodeRestrictedByCustomviewExtension(node, record)) {
+            Ext.MessageBox.alert(t('missing_permission'), t('error_pasting_asset'));
+            return false;
+        }
+
          pimcore.helpers.addTreeNodeLoadingIndicator("asset", record.id);
  
          Ext.Ajax.request({
@@ -1207,6 +1228,16 @@
          };
  
          pimcore.elementservice.deleteElement(options);
-     }
+     },
+
+     nodeRestrictedByCustomviewExtension: function(node, targetNode) {
+        var possibleRestrictions = ["audio","document","folder","image","text","unknown","video"];
+        for (var i = 0; i < possibleRestrictions.length; i++) {
+            if (node.data.type === possibleRestrictions[i] && pimcore.helpers.isObjectContextMenuOptionRestricted(this.perspectiveCfg, targetNode.data.path, 'restrict' + ucfirst(possibleRestrictions[i])) === true) {
+                return true;
+            }
+        }
+        return false;
+    }
  });
  
