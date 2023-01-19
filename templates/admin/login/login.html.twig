@@ -23,6 +23,10 @@
     </form>
 
     <a href="{{ path('pimcore_admin_login_lostpassword') }}" class="lostpassword">{{ 'Forgot your password'|trans([], 'admin') }}</a>
+
+    {% if block('custom_project_content') is defined %}
+        {{ block('custom_project_content') }}
+    {% endif %}
 </div>
 
 {% if not browserSupported %}
