@@ -84,7 +84,7 @@ pimcore.object.helpers.grid = Class.create({
                 var key = fieldConfig.key;
                 var readerFieldConfig = {name: key};
                 // dynamic select returns data + options on cell level
-                if ((type == "select" || type == "multiselect") && fieldConfig.layout.optionsProviderType !== pimcore.object.helpers.selectField.OPTIONS_PROVIDER_TYPE_CLASS && fieldConfig.layout.optionsProviderClass) {
+                if ((type == "select" || type == "multiselect") && fieldConfig.layout.optionsProviderType !== pimcore.object.helpers.selectField.OPTIONS_PROVIDER_TYPE_CONFIGURE && fieldConfig.layout.optionsProviderClass) {
                     if (typeof noBatchColumns != "undefined") {
                         if (fieldConfig.layout.dynamicOptions) {
                             noBatchColumns.push(key);
@@ -429,7 +429,7 @@ pimcore.object.helpers.grid = Class.create({
     getColumnWidth: function(field, defaultValue) {
         if (field.width) {
             return field.width;
-        } else if(field.layout && field.layout.width) {
+        } else if (field.layout && field.layout.width && field.layout.width !== '100%' && intval(field.layout.width) > 10) {
             return field.layout.width;
         } else {
             return defaultValue;

@@ -28,7 +28,7 @@ use Pimcore\Bundle\CoreBundle\OptionsProvider\SelectOptionsOptionsProvider;
 use Pimcore\Config;
 use Pimcore\Controller\KernelResponseEventInterface;
 use Pimcore\Extension\Bundle\PimcoreBundleManager;
-use Pimcore\Image\Chromium;
+use Pimcore\Image\HtmlToImage;
 use Pimcore\Maintenance\Executor;
 use Pimcore\Maintenance\ExecutorInterface;
 use Pimcore\Model\Asset;
@@ -67,14 +67,6 @@ class IndexController extends AdminAbstractController implements KernelResponseE
 
     /**
      * @Route("/", name="pimcore_admin_index", methods={"GET"})
-     *
-     * @param Request $request
-     * @param KernelInterface $kernel
-     * @param Executor $maintenanceExecutor
-     * @param CsrfProtectionHandler $csrfProtection
-     * @param Config $config
-     *
-     * @return Response
      *
      * @throws \Exception
      */
@@ -120,17 +112,11 @@ class IndexController extends AdminAbstractController implements KernelResponseE
         $this->eventDispatcher->dispatch($settingsEvent, AdminEvents::INDEX_ACTION_SETTINGS);
         $templateParams['settings'] = $settingsEvent->getSettings();
 
-        return $this->render('@PimcoreAdmin/admin/index/index.html.twig', $templateParams);
+        return $this->render($settingsEvent->getTemplate() ?: '@PimcoreAdmin/admin/index/index.html.twig', $templateParams);
     }
 
     /**
      * @Route("/index/statistics", name="pimcore_admin_index_statistics", methods={"GET"})
-     *
-     * @param Request $request
-     * @param Connection $db
-     * @param KernelInterface $kernel
-     *
-     * @return JsonResponse
      *
      * @throws \Exception
      */
@@ -247,7 +233,7 @@ class IndexController extends AdminAbstractController implements KernelResponseE
             'asset_hide_edit'                => (bool)$adminSettings['assets']['hide_edit_image'],
             'asset_tree_paging_limit'        => $config['assets']['tree_paging_limit'],
             'asset_default_upload_path'      => $config['assets']['default_upload_path'],
-            'chromium'                       => Chromium::isSupported(),
+            'chromium'                       => HtmlToImage::isSupported(),
             'videoconverter'                 => Video::isAvailable(),
             'main_domain'                    => $systemSettings['general']['domain'],
             'custom_admin_entrypoint_url'    => $adminEntrypointUrl,
