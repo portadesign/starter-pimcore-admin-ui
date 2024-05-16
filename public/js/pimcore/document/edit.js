@@ -283,6 +283,11 @@ pimcore.document.edit = Class.create({
                    continue;
                 }
 
+                // hotfix for iframes inside wysiwyg
+				if(iFrames[i].closest('.pimcore_editable_wysiwyg')) {
+					continue;
+				}
+
                 width = iFrameEl.getWidth();
                 height = iFrameEl.getHeight();
 
