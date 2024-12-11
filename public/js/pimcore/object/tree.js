@@ -240,10 +240,6 @@ pimcore.registerNS("pimcore.object.tree");
      onTreeNodeOver: function (targetNode, position, dragData, e, eOpts ) {
          var node = dragData.records[0];
 
-         if (this.nodeRestrictedByCustomviewExtension(node, targetNode)) {
-             return false;
-         }
-
          //dropping variants not allowed on folder
          if(node.data.type == 'variant' && targetNode.data.type == 'folder'){
              return false;
