@@ -161,49 +161,58 @@ pimcore.object.tags.table = Class.create(pimcore.object.tags.abstract, {
 
         this.cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {});
 
-        var tbar = [];
+        let tbar = null;
+        
+        if (!this.fieldConfig.noteditable)
+        {
+            tbar = [];
 
-        if (!this.fieldConfig.colsFixed || columns.length < this.fieldConfig.cols) {
+            if (!this.fieldConfig.colsFixed || columns.length < this.fieldConfig.cols) {
+                tbar.push({
+                    iconCls: "pimcore_icon_table_col pimcore_icon_overlay_add",
+                    handler: this.addColumn.bind(this)
+                });
+            }
+
+            if (!this.fieldConfig.colsFixed || columns.length > this.fieldConfig.cols) {
+                tbar.push({
+                    iconCls: "pimcore_icon_table_col pimcore_icon_overlay_delete",
+                    handler: this.deleteColumn.bind(this)
+                });
+            }
+
+            if (!this.fieldConfig.rowsFixed || data.length != this.fieldConfig.rows) {
+                tbar.push({
+                    iconCls: "pimcore_icon_table_row pimcore_icon_overlay_add",
+                    handler: this.addRow.bind(this)
+                });
+
+                tbar.push({
+                    iconCls: "pimcore_icon_table_row pimcore_icon_overlay_delete",
+                    handler: this.deleteRow.bind(this)
+                });
+
+                tbar.push({
+                    iconCls: "pimcore_icon_table_row pimcore_icon_overlay_clone",
+                    handler: this.cloneSelectedRow.bind(this)
+                });
+            }
+
             tbar.push({
-                iconCls: "pimcore_icon_table_col pimcore_icon_overlay_add",
-                handler: this.addColumn.bind(this)
+                iconCls: 'pimcore_icon_copy',
+                handler: this.copyFromTable.bind(this)
+            });
+
+            tbar.push({
+                iconCls: "pimcore_icon_paste",
+                handler: this.pasteFromClipboard.bind(this)
+            });
+
+            tbar.push({
+                iconCls: "pimcore_icon_empty",
+                handler: this.emptyStore.bind(this)
             });
         }
-
-        if (!this.fieldConfig.colsFixed || columns.length > this.fieldConfig.cols) {
-            tbar.push({
-                iconCls: "pimcore_icon_table_col pimcore_icon_overlay_delete",
-                handler: this.deleteColumn.bind(this)
-            });
-        }
-
-        if (!this.fieldConfig.rowsFixed || data.length != this.fieldConfig.rows) {
-            tbar.push({
-                iconCls: "pimcore_icon_table_row pimcore_icon_overlay_delete",
-                handler: this.deleteRow.bind(this)
-            });
-
-            tbar.push({
-                iconCls: "pimcore_icon_table_row pimcore_icon_overlay_add",
-                handler: this.addRow.bind(this)
-            });
-        }
-
-        tbar.push({
-            iconCls: 'pimcore_icon_copy',
-            handler: this.copyFromTable.bind(this)
-        });
-
-        tbar.push({
-            iconCls: "pimcore_icon_paste",
-            handler: this.pasteFromClipboard.bind(this)
-        });
-
-
-        tbar.push({
-            iconCls: "pimcore_icon_empty",
-            handler: this.emptyStore.bind(this)
-        });
 
         this.grid = Ext.create('Ext.grid.Panel', {
             store: this.store,
@@ -220,7 +229,16 @@ pimcore.object.tags.table = Class.create(pimcore.object.tags.abstract, {
             tbar: tbar,
             viewConfig: {
                 markDirty: false,
-                forceFit: true
+                forceFit: true,
+                listeners: {
+                    refresh: function (dataview) {
+                        Ext.suspendLayouts();
+                        Ext.each(dataview.panel.columns, function (column) {
+                            column.autoSize();
+                        });
+                        Ext.resumeLayouts(true);
+                    }
+                }
             }
         });
         this.component.add(this.grid);
@@ -277,6 +295,26 @@ pimcore.object.tags.table = Class.create(pimcore.object.tags.abstract, {
 
         this.store.add(initData);
         this.dirty = true;
+    },
+
+    cloneSelectedRow: function () {
+        var selected = this.grid.getSelectionModel();
+        if (selected.selection) {
+            var selectedIndex = selected.selection.rowIdx;
+            var selectedRecord = this.store.getAt(selectedIndex);
+
+            var initData = {};
+            var columnnManager = this.grid.getColumnManager();
+            var columns = columnnManager.getColumns();
+
+            for (var o = 0; o < columns.length; o++) {
+                initData[columns[o].dataIndex] = selectedRecord.get(columns[o].dataIndex);
+            }
+
+            this.store.insert(selectedIndex + 1, initData);
+            this.dirty = true;
+
+        }
     },
 
     deleteRow: function () {
@@ -413,30 +451,7 @@ pimcore.object.tags.table = Class.create(pimcore.object.tags.abstract, {
             width: '100%',
             emptyText: t("paste_here"),
             validateOnChange: false,
-            enableKeyEvents: true,
-            listeners: {
-                change: function(){
-                    var value = this.pasteField.getValue();
-                    if (value) {
-
-                        var lines = value.split("\n");
-
-                        var result = [];
-
-                        if (lines) {
-                            for (var i = 0; i < lines.length; i++) {
-                                var line = lines[i];
-                                line = line.split("\t");
-                                result.push(line);
-                            }
-                            this.dirty = true;
-                        }
-                    }
-
-                    this.initStore(result);
-                    this.pasteWindow.close();
-                }.bind(this)
-            }
+            enableKeyEvents: true
         });
 
         this.pasteWindow = new Ext.Window({
@@ -453,6 +468,31 @@ pimcore.object.tags.table = Class.create(pimcore.object.tags.abstract, {
                 this.pasteField,
             ],
             buttons: [
+                {
+                    text: t("save"),
+                    iconCls: "pimcore_icon_save",
+                    handler: function () {
+                        let value = this.pasteField.getValue();
+
+                        if (value) {
+                            let lines = value.split("\n");
+                            let result = [];
+
+                            if (lines) {
+                                for (let i = 0; i < lines.length; i++) {
+                                    let line = lines[i];
+                                    line = line.split("\t");
+                                    result.push(line);
+                                }
+
+                                this.dirty = true;
+                            }
+                            this.initStore(result);
+                        }
+
+                        this.pasteWindow.close();
+                    }.bind(this)
+                },
                 {
                     text: t("cancel"),
                     iconCls: "pimcore_icon_cancel",

@@ -171,7 +171,7 @@ pimcore.settings.translation.domain = Class.create({
                 } catch (e) {
                     console.error(e);
                     Ext.MessageBox.alert(t('error'), t('translations_are_not_configured')
-                        + '<br /><br /><a href="http://www.pimcore.org/docs/" target="_blank">'
+                        + '<br /><br /><a href="https://docs.pimcore.com/" target="_blank">'
                         + t("read_more_here") + '</a>');
                 }
             }.bind(this)
@@ -299,7 +299,7 @@ pimcore.settings.translation.domain = Class.create({
 
         var dateRenderer = function (d) {
             var date = new Date(d * 1000);
-            return Ext.Date.format(date, "Y-m-d H:i:s");
+            return Ext.Date.format(date, pimcore.globalmanager.get('localeDateTime').getDateTimeFormat());
         };
 
         typesColumns.push({

@@ -83,9 +83,23 @@ pimcore.elementservice.deleteElementsComplete = function(options, response) {
 pimcore.elementservice.deleteElementCheckDependencyComplete = function (window, res, options) {
 
     try {
-        let message = res.batchDelete ? t('delete_message_batch') : t('delete_message');
+        let message = '';
+        if (res.batchDelete) {
+            message += sprintf(t('delete_message_batch'), res.itemResults.length) + "<br /><div>";
+            if (res.itemResults.length > 0) {
+                message += "<ul>";
+                res.itemResults.forEach(function (item) {
+                    message += '<li>' + htmlspecialchars(item.path) + '<b>' + htmlspecialchars(item.key) + '</b></li>';
+                })
+                message += "</ul>";
+            }
+            message += "</div>";
+        } else {
+            message += t('delete_message');
+        }
+
         if (res.elementKey) {
-            message += "<br /><b style='display: block; text-align: center; padding: 10px 0;'>\"" + htmlspecialchars(res.elementKey) + "\"</b>";
+            message += "<br /><b style='display: block; text-align: center; padding: 10px 0;'>\"" + htmlspecialchars(res.itemResults[0].path + res.elementKey) + "\"</b>";
         }
         if (res.hasDependencies) {
             message += "<br />" + t('delete_message_dependencies');
@@ -460,8 +474,8 @@ pimcore.elementservice.editDocumentKeyComplete =  function (options, button, val
 
                     document.dispatchEvent(postEditDocumentKey);
                 }  else {
-                    pimcore.helpers.showNotification(t("error"), t("error_renaming_item"), "error",
-                        t(rdata.message));
+                    const message = typeof rdata.message !== 'undefined' ? t(rdata.message) : '';
+                    pimcore.helpers.showNotification(t("error"), t("error_renaming_item"), "error", message);
                 }
             } catch (e) {
                 pimcore.helpers.showNotification(t("error"), t("error_renaming_item"), "error");
@@ -526,8 +540,8 @@ pimcore.elementservice.editObjectKeyComplete = function (options, button, value,
 
                         document.dispatchEvent(postEditObjectKey);
                     }  else {
-                        pimcore.helpers.showNotification(t("error"), t("error_renaming_item"), "error",
-                            t(rdata.message));
+                        const message = typeof rdata.message !== 'undefined' ? t(rdata.message) : '';
+                        pimcore.helpers.showNotification(t("error"), t("error_renaming_item"), "error", message);
                         for (index = 0; index < affectedNodes.length; index++) {
                             record = affectedNodes[index];
                             pimcore.elementservice.refreshNode(record.parentNode);
@@ -598,8 +612,10 @@ pimcore.elementservice.editAssetKeyComplete = function (options, button, value, 
                             record.set("text", originalText);
                             record.set("path", originalPath);
                         }
+
+                        const message = typeof rdata.message !== 'undefined' ? t(rdata.message) : '';
                         pimcore.helpers.showNotification(t("error"), t("error_renaming_item"),
-                            "error");
+                        "error", message);
                         return;
                     }
 
@@ -631,8 +647,9 @@ pimcore.elementservice.editAssetKeyComplete = function (options, button, value, 
 
                             document.dispatchEvent(postEditAssetKey);
                         }  else {
+                            const message = typeof rdata.message !== 'undefined' ? t(rdata.message) : '';
                             pimcore.helpers.showNotification(t("error"), t("error_renaming_item"),
-                                "error", t(rdata.message));
+                                "error", message);
                         }
                     } catch (e) {
                         pimcore.helpers.showNotification(t("error"), t("error_renaming_item"),

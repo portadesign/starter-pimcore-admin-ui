@@ -1793,3 +1793,33 @@ function htmlspecialchars (string, quoteStyle, charset, doubleEncode) {
 
     return string
 }
+
+function getUserTimezone() {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
+function dateToServerTimezone(date) {
+
+    let utcDate = new Date(date.toLocaleString('en-US', {
+        timeZone: pimcore.settings.timezone ? pimcore.settings.timezone : 'UTC'
+    }));
+
+    let diff = date.getTime() - utcDate.getTime();
+
+    return new Date(date.getTime() - diff);
+
+}
+
+function sumWidths(width1, width2) {
+    if (/^\d+$/.test(width1) && /^\d+$/.test(width2)) {
+        return parseInt(width1) + parseInt(width2);
+    }
+    if (/^\d+$/.test(width1)) {
+        width1 += 'px';
+    }
+    if (/^\d+$/.test(width2)) {
+        width2 += 'px';
+    }
+
+    return 'calc(' + width1 + ' + ' + width2 + ')';
+}
